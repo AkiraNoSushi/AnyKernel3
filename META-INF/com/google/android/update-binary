@@ -382,12 +382,6 @@ do_modules() {
     fi;
     for module in $(find . -name '*.ko'); do
       modtarget=$POSTINSTALL$(echo $module | $BB cut -c2-);
-      if [ ! -e $modtarget ]; then
-        case $module in
-          */vendor/*) modcon=vendor;;
-          *) modcon=system;;
-        esac;
-      fi;
       if is_mounted $modtarget; then
         $BB mount -o rw,remount -t auto $modtarget;
       fi;
@@ -395,9 +389,11 @@ do_modules() {
       $BB cp -rLf $module $modtarget;
       $BB chown 0:0 $modtarget;
       $BB chmod 644 $modtarget;
-      if [ "$modcon" ]; then
-        chcon "u:object_r:${modcon}_file:s0" $modtarget;
-      fi;
+      case $module in
+        */vendor/*) mod=vendor;;
+        *) mod=system;;
+      esac;
+      chcon "u:object_r:${mod}_file:s0" /$module;
       if is_mounted $modtarget; then
         $BB mount -o ro,remount -t auto $modtarget;
       fi;
